@@ -1,0 +1,91 @@
+
+## Ryan DeFever
+## Sarupria Research Group
+## Clemson University
+## 2019 Jun 10
+
+--------------------------------------------------
+## REQUIREMENTS:  
+- Python 3 [tested with 3.6.6]  
+- Tensorflow [tested with 1.12.0]  
+- Cython [tested with 0.29.3]  
+- MDAnalysis (only required for reading .gro/.xtc files) [tested with 0.19.0]   
+--------------------------------------------------
+
+--------------------------------------------------
+## OVERVIEW:
+
+scripts/ --> Example scripts for training and evaluation  
+models/ --> PointNet model in tensorflow  
+utils/ --> Definition of datacontainer for PointNet  
+datasets/ --> Example training data and example trajectory  
+mda_custom/ --> Custom edits of MDAnalysis neighbor search  
+--------------------------------------------------
+
+--------------------------------------------------
+## RELATED WORK:
+
+This software would not be possible without the work of previous 
+researchers. The neighbor search functionality is adapted from 
+MDAnalysis (https://mdanalysis.org). The PointNet architecture is taken
+from arXiv:1612.00593. Also see http://stanford.edu/~rqi/pointnet/
+and https://github.com/charlesq34/pointnet. 
+
+
+--------------------------------------------------
+## COMPILING CUSTOM MDANALYSIS NEIGHBOR SEARCH:
+
+cd mda_custom/nsgrid/  
+python setup.py build_ext --inplace  
+--------------------------------------------------
+
+--------------------------------------------------
+## EXAMPLES:  
+
+### TRAINING POINTNET:  
+ 
+python scripts/train.py --dataset datasets/lj-r2.0_scaled_shuffled_equal_samples.npy
+                        --labels  datasets/lj-r2.0_scaled_shuffled_equal_labels.npy
+                        --weights PATH_TO_SAVE_WEIGHTS/weights  
+
+Comments:
+
+- See prepare_train.py for example of how samples and labels .npy files were prepared  
+- WARNING, running train.py takes ~4 hours on one NVIDIA V100 GPU  
+
+
+### USING POINTNET TO CLASSIFY CRYSTAL STRUCTURES:  
+
+python scripts/mda_cluster.py --weights PATH_TO_SAVE_WEIGHTS/weights
+                              --nclass 4
+                              --trjpath datasets/lj-seed
+                              --cutoff 2.0
+                              --maxneigh 43
+                              --outname example  
+
+Comments:
+
+- nclass = 4, the network was trained to recognize four classes (liq,fcc,hcp,bcc)  
+- maxneigh = 43, each point cloud has 43 points in training set. The number of points in  
+  each point cloud affects the network architecture.
+- cutoff = 2.0, same as used for training
+
+--------------------------------------------------
+
+--------------------------------------------------
+## GENERAL PROCEDURE FOR CRYSTAL STRUCTURE IDENTIFICATION:  
+
+- Run simulations of pure phases at a range of (T,P) conditions  
+- Pick a cutoff distance (targeting avg of ~30--50 points appears to give accurate classification)  
+- Calculate mean and stdev number of points within cutoff distance for all phases  
+- Choose the max number of points in each point cloud (mu+2*stdev seems to work well)  
+- Extract training examples from pure phase simulations -- create .npy structures (see prepare_train.py for an example)
+  with training point clouds and labels in the SAME ORDER  
+    (a) Shape of numpy array for training point clouds should be [NEXAMPLES,NPOINTS,3]  
+    (b) Labels are one-hot encoded: Shape of numpy array for training labels should be [NEXAMPLES,NCLASSES]  
+    (c) Central atom for point clouds always translated to (0,0,0)  
+    (d) Points in point cloud scaled such that closest point to central atom is at a distance of 1.0  
+- Train PointNet (see train.py)  
+- Use PointNet for classification (see mda_cluster.py)   
+--------------------------------------------------
+
