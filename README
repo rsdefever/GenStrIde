@@ -5,6 +5,11 @@
 ## 2019 Jun 22
 
 --------------------------------------------------
+## PLEASE CITE OUR WORK IF YOU USE THIS IN YOUR RESEARCH
+Chem. Sci., 2019,10, 7503-7515
+https://doi.org/10.1039/C9SC02097G
+
+--------------------------------------------------
 ## REQUIREMENTS:  
 - Python 3 [tested with 3.6.6]  
 - Tensorflow [tested with 1.12.0]  
